@@ -22,8 +22,10 @@
 
 
 #### Datasets
-    >
-    >
+    >We collected 2.7 million sentences of subtitles from open subtitle database (http://opus.lingfil.uu.se/OpenSubtitles.php). The subtitles of movies and TV programs provide sufﬁcient conversation contents for training. Nevertheless, subtitles are slightly different from daily conversation due to theatrical and dramatic contents. We would ﬁlter long segment of words which is impractical in daily conversation, which could be monologues in movies.
+
+    >To tag the sentences in OpenSubtitles dataset with emotion tags, we need to train a model to predict each sentence’s emotion. We would use a dataset of tweets with emotion tags from LiveJournal to train the prediction model. 
+
 
 #### Other sections that you may find relevant for your particular project
     >
