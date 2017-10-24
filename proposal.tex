@@ -1,0 +1,129 @@
+\documentclass{article}
+
+% if you need to pass options to natbib, use, e.g.:
+% \PassOptionsToPackage{numbers, compress}{natbib}
+% before loading nips_2016
+%
+% to avoid loading the natbib package, add option nonatbib:
+% \usepackage[nonatbib]{nips_2016}
+
+% \usepackage{nips_2016}
+
+% to compile a camera-ready version, add the [final] option, e.g.:
+\usepackage[final]{nips_2016}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+
+\title{Reinforcement Learning for Chatbot with Emotions}
+
+% The \author macro works with any number of authors. There are two
+% commands used to separate the names and addresses of multiple
+% authors: \And and \AND.
+%
+% Using \And between authors leaves it to LaTeX to determine where to
+% break the lines. Using \AND forces a line break at that point. So,
+% if LaTeX puts 3 of 4 authors names on the first line, and the last
+% on the second line, try using \AND instead of \And before the third
+% author name.
+
+\author{
+  Luyi Ma \\
+  School of Computer Science\\
+  Carnegie Mellon University\\
+  Pittsburgh, PA 15213 \\
+  \texttt{luyim@andrew.cmu.edu} \\
+  \And
+  Zhefan Zhu \\
+  School of Computer Science \\
+  Carnegie Mellon University\\
+  Pittsburgh, PA 15213 \\
+  \texttt{zhefanz@andrew.cmu.edu} \\  
+  %% examples of more authors
+  %% \And
+  %% Coauthor \\
+  %% Affiliation \\
+  %% Address \\
+  %% \texttt{email} \\
+  %% \AND
+  %% Coauthor \\
+  %% Affiliation \\
+  %% Address \\
+  %% \texttt{email} \\
+  %% \And
+  %% Coauthor \\
+  %% Affiliation \\
+  %% Address \\
+  %% \texttt{email} \\
+  %% \And
+  %% Coauthor \\
+  %% Affiliation \\
+  %% Address \\
+  %% \texttt{email} \\
+}
+
+\begin{document}
+% \nipsfinalcopy is no longer used
+
+\maketitle
+
+
+
+\section{Problem statement}
+Dialogues generation with similary emotions: \\
+Given a user's sentance/utterance as an initial input, generate dialogues with similar or proper emotions and correct word context.
+
+
+
+\section{Motivation}
+In daily conversations, like online chatting, users send messages with emotional interactions instead of simple Q\&A pattern. A natural, fluent one-to-one conversation, generally, contains dialogues in which both users share similar emotion levels, such as happy, saddness. Our goal is to model a natural dialogue and the model can figure out users' emotions and response words with proper emotions.
+
+
+
+
+\section{Proposed approach}
+Our project contains three parts:
+
+
+\subsection{Emotion extraction and feature embedding}
+In order to understand how emotions are presented in sentence and how can they be embedded into a metric space, we plan to train a classification model (sentence based RNN model) to do feature extraction and embedding. These features will be used later by our model to interpret user emotions. Also, this classification model will be used for adding possible emotino tags to our movie-subtile database. \par
+Some statistical features will be used too.
+
+
+
+
+
+\subsection{Generative model for sentence generation}
+To generate a response from an input sentence, a generate model is necessary to model the sentence generation. Bascailly, we plan to use Seq2Seq model with word embedding method like word2vec to acheive word embedding and language modeling.
+
+
+\subsection{Reinforcement Learning Framework of dialogue generations}
+To take context information into consideration, we plan to fit our model into reinforcement learning framework. Specifically, we try to make our model predict a user's current emotion with optimized forward rewards (similarity of possible emotions) and backward rewards. 
+
+
+
+\section{Datasets}
+We would collect 2.7 million sentences of subtitles from open subtitle database (\url{http://opus.lingfil.uu.se/OpenSubtitles.php/}). The subtitles of movies and TV programs provide sufficient conversation contents for training. Nevertheless, subtitles are slightly different from daily conversation due to theatrical and dramatic contents. We would filter long segment of words which is impractical in daily conversation, which could be monologues in movies. \par
+
+To tag the sentences in OpenSubtitles dataset with emotion tags, we need to train a model to predict each sentence’s emotion. We would use a dataset of tweets with emotion tags from LiveJournal to train the prediction model. 
+
+
+
+
+
+\section*{References}
+
+[1] Li, J., Monroe, W., Ritter, A., Galley, M., Gao, J., \& Jurafsky, D. (2016). Deep reinforcement learning for dialogue generation. {\it arXiv preprint arXiv:1606.01541}.
+
+
+[2] Zhou, H., Huang, M., Zhang, T., Zhu, X., \& Liu, B. (2017). Emotional Chatting Machine: Emotional Conversation Generation with Internal and External Memory. {\it arXiv preprint arXiv:1704.01074}.
+
+[3] Sutskever, I., Vinyals, O., \& Le, Q. V. (2014). Sequence to sequence learning with neural networks. { \it In Advances in neural information processing systems} (pp. 3104-3112).
+
+\end{document}
