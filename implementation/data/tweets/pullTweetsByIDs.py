@@ -30,7 +30,7 @@ def getTweets(api, _input, outDir, name):
 			except tweepy.TweepError, err:
 				fLog.write(errFmt.format(tmp[0], err))
 			else:
-				fTweets.write(tweet.text.encode("utf-8") + "\n")
+				fTweets.write(re.sub(r"\n", ' ', tweet.text.encode("utf-8")) + "\n")
 				fIDMoods.write(fmt.format(tmp[0], tmp[1]))	
 	print "Done! lol"			
 
@@ -40,3 +40,4 @@ if __name__ == "__main__":
 	# sys.argv[3]: set tht name for file saving
 	assert len(sys.argv) == 4
 	getTweets(api, sys.argv[1], sys.argv[2], sys.argv[3])
+	#print re.sub(r"\n", '', api.get_status("142488672607019009").text)
