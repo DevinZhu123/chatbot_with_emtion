@@ -13,20 +13,10 @@ class MatchVector:
 
 
 
-    def get_vector(self, word_list):
-        num_words = len(word_list)
-        ret_matrix = np.zeros((num_words, self.vector_dim))
+    def get_vector(self, word_list, num_words):
+        ret_vector = np.zeros((num_words * self.vector_dim))
         for i in xrange(0, num_words):
             if word_list[i] in self.vectors:
-                ret_matrix[i] = self.vectors[word_list[i]]
-        return ret_matrix
+                ret_vector[i*self.vector_dim : (i+1)*self.vector_dim] = self.vectors[word_list[i]]
+        return ret_vector
 
-
-
-start_time = time.time()
-mv = MatchVector('../data/vector/glove.6B/glove.6B.50d.txt')
-load_time = time.time()
-print ("--- loading vector file: %s seconds ---" % (load_time - start_time))
-mv.get_vector(['the', 'hell', 'is', 'this'])
-query_time1 = time.time()
-print ("--- get one sentence: %s seconds ---" % (query_time1 - load_time))
