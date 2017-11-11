@@ -42,35 +42,39 @@ class demoLSTM(nn.Module):
         return cls_score
 
 
-def loadData(addr):
+def loadData(path_to_tweet, path_to_tag, path_to_word_vec):
     # load MNIST
-    dataX, dataY = utils.loadData(addr, 1)
+    dataX, dataY = utils.load_tweet_data(path_to_tweet, path_to_tag, path_to_word_vec)
     tX = torch.from_numpy(dataX).float()
     tY = torch.from_numpy(dataY)
     return Variable(tX.cuda()), Variable(tY.cuda())
 
 
-def testDemoMNIST():
-    model = demoLSTM(batch_size=1, embedding_dim=28, hidden_dim=100, targetSize=10).cuda()
+def testDemoTweets():
+    batch_size = 10
+    model = demoLSTM(batch_size=batch_size, embedding_dim=50, hidden_dim=200, targetSize=7).cuda()
     loss_function = nn.NLLLoss().cuda()
-    optimizer = optim.SGD(model.parameters(), lr=0.1)
-    addr = "../data/digitstrain.txt"
-    dataX, dataY = loadData(addr)
+    optimizer = optim.SGD(model.parameters(), lr=0.01)
+    # addr = "../data/digitstrain.txt"
+    path_to_tweet = '../../chatbot/data/tweet/cleanTrain_1Tweets.txt'
+    path_to_tag = '../../chatbot/data/tweet/tweets_with_tags_train_1_IdMoods.txt'
+    path_to_word_vec = '../../chatbot/data/vector/glove.6B.50d.txt'
+    dataX, dataY = loadData(path_to_tweet, path_to_tag, path_to_word_vec)
     # test loaded data
-    print "loaded data", dataX[0:1].size()
+    print "loaded data", dataX[0:10].size()
     # test model
-    tag_score = model(dataX[0:1])
-    loss = loss_function(tag_score, dataY[0:1])
+    tag_score = model(dataX[0:10])
+    loss = loss_function(tag_score, dataY[0:10])
     print "model score, softmax", tag_score, "loss", loss.data
     # train model
     losses = []
     iters = 0
-    for epoch in range(10):
+    for epoch in range(100):
         print "epoch: ", epoch+1
-        for i in range(dataX.size()[0]):
+        for i in range(dataX.size()[0]/batch_size):
             iters += 1
-            img = dataX[i:i+1]
-            tag = dataY[i:i+1]
+            img = dataX[i*batch_size:(i+1)*batch_size]
+            tag = dataY[i*batch_size:(i+1)*batch_size]
             model.zero_grad()
             model.hidden = model.init_LSTMhidden()
             tag_score = model(img)
@@ -82,20 +86,24 @@ def testDemoMNIST():
                 print "loss", loss.data.cpu().numpy()[0]
     print "finish training"
     print "test overfit"
-    tag_score = model(dataX[0:1])
+    # tag_score = model(dataX[0:1])
     d1 = 0
     d2 = 0
-    for i in range(dataX.size()[0]):
-        d2 += 1
-        img = dataX[i:i+1]
-        tag = dataY[i].data.cpu().numpy()[0]
+    for i in range(dataX.size()[0]/batch_size):
+        d2 += batch_size
+        img = dataX[i*batch_size:(i+1)*batch_size]
+        tag = dataY[i*batch_size:(i+1)*batch_size].data.cpu().numpy()
         model.zero_grad
         model.hidden = model.init_LSTMhidden()
         tag_score = model(img)
-        pred = np.argmax(tag_score.data.cpu().numpy())
-        if pred == tag:
-            d1 += 1
+        # print tag_score.data.cpu().numpy()
+        pred = np.argmax(tag_score.data.cpu().numpy(), axis=1)
+        # print(pred.shape, tag.shape)
+        assert pred.shape == tag.shape, 'prediction shape error.'
+        d1 += np.sum(pred == tag)
     print "train accuracy", d1 * 1.0 / d2
+
+    """
     print "test validation"
     addr = "../data/digitsvalid.txt"
     validX, validY = loadData(addr)
@@ -112,6 +120,8 @@ def testDemoMNIST():
         if pred == tag:
             d1 += 1
     print "validation accuracy", d1 * 1.0 / d2
+    """
+
     return losses
 
 def plot(data):
@@ -121,5 +131,5 @@ def plot(data):
     plt.show()
 
 if __name__ == "__main__":
-    losses = testDemoMNIST()
+    losses = testDemoTweets()
     # plot(losses)
