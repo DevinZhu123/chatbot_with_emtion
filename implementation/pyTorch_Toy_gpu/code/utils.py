@@ -3,12 +3,12 @@ import re
 
 mood_dict = {
     'joy': 0,
-    'love': 0,
-    'sadness': 1,
-    'anger': 1,
-    'fear': 2,
-    'thankfulness': 0,
-    'surprise': 3
+    'love': 1,
+    'sadness': 2,
+    'anger': 3,
+    'fear': 4,
+    'thankfulness': 5,
+    'surprise': 6
 }
 
 class MatchVector:

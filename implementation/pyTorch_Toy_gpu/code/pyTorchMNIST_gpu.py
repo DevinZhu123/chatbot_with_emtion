@@ -7,6 +7,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import utils
 import matplotlib.pyplot as plt
+import math
 
 
 class demoLSTM(nn.Module):
@@ -18,9 +19,16 @@ class demoLSTM(nn.Module):
         super(demoLSTM, self).__init__()
         self.batch_size = batch_size
         self.hidden_dim = hidden_dim
+        self.embedding_dim = embedding_dim
         self.LSTM = nn.LSTMCell(embedding_dim, hidden_dim)
         self.hidden = self.init_LSTMhidden()
-        self.hidden2tag = nn.Linear(hidden_dim, targetSize)
+        self.poolsize = 3
+        self.stride = 2
+        pool_output_h = math.floor((self.hidden_dim - self.poolsize) / self.stride + 1)
+        pool_output_w = math.floor((28 - self.poolsize) / self.stride + 1)
+        print(pool_output_w, pool_output_h)
+        self.avgpooling = nn.AvgPool2d(self.poolsize, stride=self.stride)
+        self.hidden2tag = nn.Linear(int(pool_output_h*pool_output_w), targetSize)
 
     def init_LSTMhidden(self):
         # The axes semantics are (num_layers, minibatch_size, hidden_dim)
@@ -35,9 +43,15 @@ class demoLSTM(nn.Module):
         batch, dimR, dimC = _input.size()
         ec, eh = self.hidden
         rows = [_input[:,i,:] for i in xrange(dimR)]
+        lstm_output = []
         for i in rows:
             ec, eh = self.LSTM(i, (ec, eh))
-        cls_space = self.hidden2tag(eh)
+            lstm_output.append(eh)
+        pooling_input = torch.stack(lstm_output, 1)
+        pooling_output = self.avgpooling(pooling_input).view(self.batch_size, -1)
+        # print(pooling_input.size())
+        # print(pooling_output.size())
+        cls_space = self.hidden2tag(pooling_output)
         cls_score = F.log_softmax(cls_space)
         return cls_score
 
@@ -51,25 +65,25 @@ def loadData(path_to_tweet, path_to_tag, path_to_word_vec):
 
 
 def testDemoTweets():
-    batch_size = 10
-    model = demoLSTM(batch_size=batch_size, embedding_dim=50, hidden_dim=200, targetSize=4).cuda()
+    batch_size = 200
+    model = demoLSTM(batch_size=batch_size, embedding_dim=50, hidden_dim=200, targetSize=7).cuda()
     loss_function = nn.NLLLoss().cuda()
-    optimizer = optim.SGD(model.parameters(), lr=0.01)
+    optimizer = optim.SGD(model.parameters(), lr=0.05)
     # addr = "../data/digitstrain.txt"
     path_to_tweet = '../../../data/TweetsData/train_1/cleanTrain_1Tweets.txt'
     path_to_tag = '../../../data/TweetsData/train_1/tweets_with_tags_train_1_IdMoods.txt'
     path_to_word_vec = '../../../data/vector/glove.6B/glove.6B.50d.txt'
     dataX, dataY = loadData(path_to_tweet, path_to_tag, path_to_word_vec)
     # test loaded data
-    print "loaded data", dataX[0:10].size()
+    print "loaded data", dataX[0:batch_size].size()
     # test model
-    tag_score = model(dataX[0:10])
-    loss = loss_function(tag_score, dataY[0:10])
+    tag_score = model(dataX[0:batch_size])
+    loss = loss_function(tag_score, dataY[0:batch_size])
     print "model score, softmax", tag_score, "loss", loss.data
     # train model
     losses = []
     iters = 0
-    for epoch in range(50):
+    for epoch in range(500):
         print "epoch: ", epoch+1
         for i in range(dataX.size()[0]/batch_size):
             iters += 1
@@ -82,7 +96,7 @@ def testDemoTweets():
             loss.backward()
             optimizer.step()
             losses.append(loss.data.cpu().numpy()[0])
-            if iters % 1000 == 0:
+            if iters % 100 == 0:
                 print "loss", loss.data.cpu().numpy()[0]
     print "finish training"
     print "test overfit"
