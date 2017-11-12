@@ -52,13 +52,13 @@ def loadData(path_to_tweet, path_to_tag, path_to_word_vec):
 
 def testDemoTweets():
     batch_size = 10
-    model = demoLSTM(batch_size=batch_size, embedding_dim=50, hidden_dim=200, targetSize=7).cuda()
+    model = demoLSTM(batch_size=batch_size, embedding_dim=50, hidden_dim=200, targetSize=4).cuda()
     loss_function = nn.NLLLoss().cuda()
     optimizer = optim.SGD(model.parameters(), lr=0.01)
     # addr = "../data/digitstrain.txt"
-    path_to_tweet = '../../chatbot/data/tweet/cleanTrain_1Tweets.txt'
-    path_to_tag = '../../chatbot/data/tweet/tweets_with_tags_train_1_IdMoods.txt'
-    path_to_word_vec = '../../chatbot/data/vector/glove.6B.50d.txt'
+    path_to_tweet = '../../../data/TweetsData/train_1/cleanTrain_1Tweets.txt'
+    path_to_tag = '../../../data/TweetsData/train_1/tweets_with_tags_train_1_IdMoods.txt'
+    path_to_word_vec = '../../../data/vector/glove.6B/glove.6B.50d.txt'
     dataX, dataY = loadData(path_to_tweet, path_to_tag, path_to_word_vec)
     # test loaded data
     print "loaded data", dataX[0:10].size()
@@ -69,7 +69,7 @@ def testDemoTweets():
     # train model
     losses = []
     iters = 0
-    for epoch in range(100):
+    for epoch in range(50):
         print "epoch: ", epoch+1
         for i in range(dataX.size()[0]/batch_size):
             iters += 1
@@ -93,7 +93,7 @@ def testDemoTweets():
         d2 += batch_size
         img = dataX[i*batch_size:(i+1)*batch_size]
         tag = dataY[i*batch_size:(i+1)*batch_size].data.cpu().numpy()
-        model.zero_grad
+        model.zero_grad()
         model.hidden = model.init_LSTMhidden()
         tag_score = model(img)
         # print tag_score.data.cpu().numpy()
@@ -132,4 +132,4 @@ def plot(data):
 
 if __name__ == "__main__":
     losses = testDemoTweets()
-    # plot(losses)
+    plot(losses)
