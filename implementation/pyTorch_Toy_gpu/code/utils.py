@@ -3,12 +3,12 @@ import re
 
 mood_dict = {
     'joy': 0,
-    'love': 1,
-    'sadness': 2,
-    'anger': 3,
-    'fear': 4,
-    'thankfulness': 5,
-    'surprise': 6
+    'love': 0,
+    'sadness': 1,
+    'anger': 1,
+    'fear': 1,
+    'thankfulness': 2,
+    'surprise': 2
 }
 
 class MatchVector:
@@ -67,7 +67,8 @@ def load_tweet_data(path_to_tweet, path_to_tag, path_to_word_vec, seed=1):
             max_sentence_size = max(len(words), max_sentence_size)
             sentences.append(words)
 
-    max_sentence_size = max_sentence_size * 4 / 5
+    # max_sentence_size = max_sentence_size * 4 / 5
+    max_sentence_size = 28
     dataX = [mv.get_matrix(words, max_sentence_size) for words in sentences]
     dataX = np.array(dataX)
 
