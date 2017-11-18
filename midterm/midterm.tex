@@ -14,6 +14,7 @@
 \usepackage{graphicx}
 \usepackage{caption}
 \usepackage{subcaption}
+\usepackage{amssymb,mathtools}
 
 \usepackage[utf8]{inputenc} % allow utf-8 input
 \usepackage[T1]{fontenc}    % use 8-bit T1 fonts
@@ -79,7 +80,8 @@
 
 
 
-
+\section{Introduction}
+In daily conversations, like online chatting, users send messages with emotional interactions instead of simple Q\&A pattern. A natural, fluent one-to-one conversation, generally, contains dialogues in which both users share similar emotion levels, such as happy, sadness. Our goal is to model a natural dialogue and the model can figure out users' emotions and response words with proper emotions.
 
 
 \section{Background}
@@ -118,29 +120,88 @@ To train the model determining the emotion of a sentence, we used a dataset of t
 
 In addition, the word2seq embedding vectors (50 dimensions) are obtained from GloVe (https://nlp.stanford.edu/projects/glove/), which is used to transform words into vectors. 
 
+\subsection{Long Short Term Memory (LSTM) and Seq2Seq Model}
+In our task, we use Long Short Term Memory model (LSTM) as a building block to construct more complicated Sequence to Sequence model (Seq2Seq Model). The basic LSTM model is usually used for parsing sequential data. Lets say we have a sequence of inputs $x_1, x_2, ..., x_T \in \mathcal{R}^{m}$. With an initial cell state $c_0 = \mathbf{0} \in \mathcal{R}^{h}$ and an initial output $h_0 = \mathbf{0} \in \mathcal{R}^{h}$, inputs can be parsed by LSTM model with $h$ hidden units. At time $t \in [1, T]$, LSTM model does the following updates:
+\begin{align*}
+i_t &= \sigma(x_{t}^{T}W_i + h_{t-1}^{T}U_i + b_i)\\
+f_t &= \sigma(x_{t}^{T}W_f + h_{t-1}^{T}U_f + b_f)\\
+o_t &= \sigma(x_{t}^{T}W_o + h_{t-1}^{T}U_o + b_o)\\
+\hat c_t &= \tanh(x_{t}^{T}W_c + h_{t-1}^{T}U_c + b_c)\\
+c_t &= f_t \odot c_{t-1} + i_t \odot \hat c_t\\
+h_t &= o_t \odot \tanh(c_t)
+\end{align*}
+, where $\sigma(\cdot)$ is the sigmoid function (element-wise) and $\odot$ is the element-wise product.
 
+For the Seq2Seq recipe in our task, we adapt the multilayer LSTM model 
+from Oriol et al.[Grammar as a Foreign Language]. Figure \ref{fig:LSTM_A} shows the multilayer LSTM model. $LSTM_{in}^{i}$ indicates the $i$-th encoding LSTM layer and $LSTM_{out}^{i}$ indicates the $i$-th decoding LSTM layer.
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.7\linewidth]{LSTM_A}
+	\caption{}
+	\label{fig:LSTM_A}
+\end{figure}
 
+\subsection{Emotion in dialogue utterances}
+Our task is to build a chatbot with the ability of considering the emotion of the utterances and react with a proper emotion. To extract or predict the emotion/mood of utterances, we use an one layer LSTM model to parse sentences and predict the type of emotions. Basically, we take the last hidden state, $h_T$, of the LSTM model for emotion classification:
+\begin{align*}
+O &= h_T^TW_1 + b_1\\
+p &= SoftMax(O)\\
+loss &= \frac{1}{N_{c}}\sum (y_i\log(p_i) + (1-y_i)\log(1 - p_i))
+\end{align*}
+, where $SoftMax(\cdot)$ is the softmax function, $y_i$ is the true label and $N_c$ is the number of emotion types.
 
+We use this model to measure the emotion of utterances in the dialogue.
 
+\subsection{Reinforcement Learning for Chatbot}
+During the training of chatbot, it is quite likely to generate dull sentences which may stop the conversation, or sentences with similar meaning of previous sentences which leads to an infinite cycle. In order to model the long-term influence of generated dialogues and emotion flows between utterances, we adapt the reinforcement learning framework from Li et al.[Deep Reinforcement Learning for Dialogue Generation] with some modifications. We will follow the notation used in [Deep Reinforcement Learning for Dialogue Generation] and define the reinforcement learning framework below.
 
+\subsubsection{Framework of Reinforcement Learning}
+In order to model the generation of dialogues, we simulate this process with two bots, Agent $P$ and Agent $Q$. A dialogue is represented as a sequence of tuple $[p_i, q_i]$ and an action from an agent is denoted as $a_{\cdot i}$ which can be embedded by a Seq2Seq model ($h_{p_i}$ for $a_{p_i}$ and $h_{q_i}$ for $a_{q_i}$).
 
+The policy model $p_{RL}$ model the decision making. For example, $p_{RL}(p_{i+1} | p_i, q_i)$ is the conditional likelihood of $p_{i+1}$ given prior state $[p_i, q_i]$). The rewards $R(a_i, [p_i, q_i])$ represents the rewards of action $a_i$ given the prior state $[p_i, p_i]$. The rewards can be four-fold. To avoid dull answering, a reward $r_1$ is added and can be defined as:
+\begin{align*}
+r_1 = - \frac{1}{N_{\mathcal{S}}} \sum_{s \in \mathcal{S}}(\frac{1}{N_s} \log p_{seq2seq}(s|a))
+\end{align*}
+, where $\mathcal{S}$ is a set of customized dull sentences. The negative log likelihood $p_{seq2seq}(s|a)$ is maximized and normalized by the size of $s$ and $\mathcal{S}$, $N_{\mathcal{S}}$ and $N_{s}$.
 
+To maintain the information flow, a second reward is considered.
+\begin{align*}
+r_2 &= - \log cosSim(h_{p_i}, h_{p_{i+1}})\\
+&= - \log (\frac{h_{p_i} h_{p_{i+1}}}{||h_{p_i}|| ||h_{p_{i+1}}||})
+\end{align*}
+, where $cosSim()$ computes the cosine similarity. This reward is maximized to penalize semantic similarity between two consecutive turns and avoid "dead cycles".
 
+To optimize the semantic coherence, a third reward $r_3$ is added. \begin{align*}
+r_3 = \frac{1}{N_a} \log p_{seq2seq}(a|p_i, q_i) + \frac{1}{q_i} \log p^{backward}_{seq2seq}(q_1|a)
+\end{align*}
+$r_3$ is maximized to optimize the forward reward and backward reward. 
 
+Finally, we add a reward of emotion adequacies to the model.
+\begin{align*}
+r_4 = e_{a|p_i, q_i} \log e_{q_i}
+\end{align*}
+, where $e_{\cdot}$ is the embedding of utterance emotion from the LSTM model we used to predict sentences' emotions.
 
+Now $R(a, [p_i, q_i])$ can be expressed as,
+\begin{align*}
+R(a, [p_i, q_i]) = &\sum \lambda_i r_i\\
+& \sum \lambda_i = 1
+\end{align*}
+, where $\lambda_i$ is the weight of the reward $r_i$. Initially, we set $\lambda_1 = \lambda_2 = \lambda_4 = 0.2$ and $\lambda_3 = 0.4$.
 
-
+The objective function of our model which is optimized during training is, 
+\begin{align*}
+\mathcal{J}(\theta) = E_{p_{RL}}[\sum_{i=1}^{T} R(a_i|[p_i, q_i])]
+\end{align*}
 
 
 \section{Experiments \& Results}
 \subsection{Tweet classification}
 
-We trained the simple LSTM model with 80\% of the total tweet dataset, and used remaining 20\% for evaluating the model performance. Since every sample tweet has different length of words, the batch size of the model is set to 1, and figure \ref{fig:test error} shows the trend of test classification error vs. number of training samples. The model converges very fast, and achieves minimum testing error after 20000 iterations (tweet samples). Table \ref{sentence} shows the prediction results of some sentences picked randomly from websites. We can notice that our model tends to give positive predictions to the inputs, which requires further study. 
+We trained the simple LSTM model with 80\% of the total tweet dataset, and used remaining 20\% for evaluating the model performance. Since every sample tweet has different length of words, the batch size of the model is set to 1, and Figure \ref{fig:test error} shows the trend of test classification error vs. number of training samples. The model converges very fast, and achieves minimum testing error after 20000 iterations (tweet samples). Table \ref{sentence} shows the prediction results of some sentences picked randomly from websites. We can notice that our model tends to give positive predictions to the inputs, which requires further study. 
 
 
-
-
-\begin{figure}
+\begin{figure}[h]
 \begin{center}
 \includegraphics[scale=0.6]{Figure2.png}
 \caption{Test classification error of simple LSTM model.}
@@ -148,8 +209,16 @@ We trained the simple LSTM model with 80\% of the total tweet dataset, and used 
 \end{center}
 \end{figure}
 
+We also try a version of LSTM with a soft attention. 
+\begin{align*}
+\{h_1, h_2,..., h_T\} &= LSTM(\mathbf{X})\\
+u_i &= v^{T}h_i\\
+a_i &= SoftMax(u_i)\\
+x_{weighted} &= \sum a_i x_i\\
+\end{align*}
+, where $v$ is a vector for attention computation. We use the weighted sum of words to predict the type of emotions since usually the emotion is borne in these words with emotion potential like "happy" and "congratulation". Here are some result of classification with attention weights. However, this assumption doesn't work well in the real, complicate world. But it seems to overfit on some words without considering the semantic information of the sentence. So we abandon this model and use a simple LSTM for emotion extraction.
 
-\begin{table}[tbp]
+\begin{table}[tbph]
 \centering  % 表居中
 \begin{tabular}{lccc}  % {lccc} 表示各列元素对齐方式，left-l,right-r,center-c
 \hline
@@ -184,7 +253,7 @@ I got everything I ever wanted. I feel so blessed . &joy &joy \\ \hline
 
 
 
-
+\newpage
 
 \section*{References}
 
