@@ -16,9 +16,11 @@ class DataManager:
         return self
 
     def buildLookupTabel(self):
-        self.wordIndex = {}
-        counter = 0
+        self.wordIndex = {"SOS": 0,  "EOS": 1}
+        counter = 2
         for key in self.wordMap:
+            if (key == "SOS" || key == "EOS"):
+                continue
             self.wordIndex[key] = counter
             counter += 1
         # build wordvec
