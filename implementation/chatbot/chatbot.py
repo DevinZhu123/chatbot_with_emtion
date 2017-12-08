@@ -101,7 +101,7 @@ def variablesFromPair(pair):
     return (input_variable, target_variable)
 
 
-def train(input_variable, target_variable, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, emoTag, max_length=MAX_LENGTH):
+def train(input_variable, target_variable, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, emoTag, isTrain=True, max_length=MAX_LENGTH):
     # criterion: ?
     # max_length: ?
 
@@ -153,17 +153,18 @@ def train(input_variable, target_variable, encoder, decoder, encoder_optimizer, 
             if ni == EOS_token:
                 break
 
-    loss.backward()
-
-    encoder_optimizer.step()
-    decoder_optimizer.step()
+    if isTrain:
+        loss.backward()
+        encoder_optimizer.step()
+        decoder_optimizer.step()
 
     return loss.data[0] / target_length
 
 
-def trainIters(encoder, decoder, training_pairs, print_every=100, plot_every=100, learning_rate=0.01):
+def trainIters(encoder, decoder, training_pairs, test_pairs=None, print_every=100, plot_every=100, learning_rate=0.01):
     # start = time.time()
     plot_losses = []
+    test_losses = []
     print_loss_total = 0  # Reset every print_every
     plot_loss_total = 0  # Reset every plot_every
 
@@ -194,7 +195,20 @@ def trainIters(encoder, decoder, training_pairs, print_every=100, plot_every=100
             plot_losses.append(plot_loss_avg)
             plot_loss_total = 0
 
-    return plot_losses
+        if test_pairs and iter % plot_every == 0:
+            test_loss = 0.0
+            testIter = 0
+            for test_pair in test_pairs:
+                testIter += 1
+                # training_pair: ((), emocls)
+                emoTag = Variable(torch.LongTensor(test_pair[1]))
+                input_variable, target_variable = variablesFromPair(test_pair[0])
+                loss = train(input_variable, target_variable, encoder,
+                             decoder, encoder_optimizer, decoder_optimizer, criterion, emoTag, isTrain=False)
+                test_loss += loss
+            test_losses.append(test_loss / testIter)
+
+    return plot_losses, test_losses
 
 
 def showPlot(points):
@@ -206,11 +220,13 @@ def showPlot(points):
     plt.plot(points)
 
 
-def main(wm, encoder, decoder, epoch, pathDir):
-    loss = []
+def main(wm, testWm, encoder, decoder, epoch, pathDir):
+    trainLoss = []
+    testLoss = []
     for i in range(epoch):
-        tmp = trainIters(encoder, decoder, wm.getBatch())
-        loss.extend(tmp)
+        tmp = trainIters(encoder, decoder, wm.getBatch(), testWm.getBatch())
+        trainLoss.extend(tmp[0])
+        testLoss.extend(tmp[1])
         if epoch % 2 == 0:
             # save model
             torch.save(encoder.state_dict(), pathDir + "/Encoder.model")
@@ -238,12 +254,17 @@ if __name__ == "__main__":
     emoIdx = {mood_dict[i]:i for i in mood_dict}
     emoCls = "../../data/Subtitles/subtitileData/tiny_emotion.txt"
     subtitle = "../../data/Subtitles/subtitileData/tiny.txt"
+    test = "../data/Subtitles/subtitileData/test.txt"
+    testEmoCls = "../../data/Subtitles/subtitileData/text_emotion.txt"
     dm = DH.DataManager()
     wm = dm.buildModel(subtitle).buildLookupTabel().data4NN(subtitle, 1)
     wm.setEmotionCls(emoCls)
     wm.setEmoIdx(emoIdx)
+    testWm = dm.data4NN(test, 1)
+    testWm.setEmotionCls(testEmoCls)
+    testWm.setEmoIdx(emoIdx)
     encoderInput_dim, encoderHidden_dim = 10000, 16
     decoderHidden_dim, decoderOutput_dim = 16, 10000
     encoder = EncoderRNN(encoderInput_dim, encoderHidden_dim)
     decoder = AttnDecoderRNN(decoderHidden_dim, decoderOutput_dim)
-    main(wm, encoder, decoder, epoch, pathDir='.')
+    main(wm, testWm, encoder, decoder, epoch, pathDir='.')
