@@ -16,6 +16,7 @@ teacher_forcing_ratio = 0.5
 use_cuda = 0
 MAX_LENGTH = 128
 EOS_token = 1
+SOS_token = 0
 
 
 class EncoderRNN(nn.Module):
@@ -140,7 +141,7 @@ def train(input_variable, target_variable, encoder, decoder, encoder_optimizer, 
 
     else:
         # Without teacher forcing: use its own predictions as the next input
-        for di in range(target_length):
+        for di in range(1, target_length):
             decoder_output, decoder_hidden, decoder_attention = decoder(
                 decoder_input, decoder_hidden, encoder_output, encoder_outputs, emoTag)
             topv, topi = decoder_output.data.topk(1)
@@ -161,7 +162,7 @@ def train(input_variable, target_variable, encoder, decoder, encoder_optimizer, 
     return loss.data[0] / target_length
 
 
-def trainIters(encoder, decoder, training_pairs, test_pairs=None, print_every=2000, test_every=2000, learning_rate=0.01):
+def trainIters(encoder, decoder, training_pairs, test_pairs=None, print_every=1000, test_every=1000, learning_rate=0.01):
     # start = time.time()
     train_losses = []
     test_losses = []
@@ -182,7 +183,6 @@ def trainIters(encoder, decoder, training_pairs, test_pairs=None, print_every=20
         print_loss_total += loss
         plot_loss_total += loss
         iter += 1
-
         if iter % print_every == 0:
             print_loss_avg = print_loss_total / print_every
             print_loss_total = 0
@@ -208,6 +208,56 @@ def trainIters(encoder, decoder, training_pairs, test_pairs=None, print_every=20
     return train_losses, test_losses
 
 
+def pred(input_variable, encoder, decoder, emoTag, max_length=MAX_LENGTH):
+    # criterion: ?
+    # max_length: ?
+
+    encoder_hidden = encoder.initHidden()
+
+    input_length = input_variable.size()[0]
+
+    encoder_outputs = Variable(torch.zeros(max_length, encoder.hidden_dim))
+    encoder_outputs = encoder_outputs.cuda() if use_cuda else encoder_outputs
+
+    prediction = []
+
+    for ei in range(input_length):
+        encoder_output, encoder_hidden = encoder(
+            input_variable[ei], encoder_hidden)
+        encoder_outputs[ei] = encoder_output[0][0]
+
+    decoder_input = Variable(torch.LongTensor([[SOS_token]]))
+    prediction.append(SOS_token)
+    decoder_input = decoder_input.cuda() if use_cuda else decoder_input
+
+    decoder_hidden = encoder_hidden
+
+        # Without teacher forcing: use its own predictions as the next input
+    for di in range(1, max_length):
+        decoder_output, decoder_hidden, decoder_attention = decoder(
+            decoder_input, decoder_hidden, encoder_output, encoder_outputs, emoTag)
+        topv, topi = decoder_output.data.topk(1)
+        ni = topi[0][0]
+        prediction.append(int(ni))
+
+        decoder_input = Variable(torch.LongTensor([[ni]]))
+        decoder_input = decoder_input.cuda() if use_cuda else decoder_input
+        if ni == EOS_token:
+            break
+
+    return prediction
+
+def predIters(wm, encoder, decoder):
+    test_pairs = wm.getBatch()
+    for test_pair in test_pairs:
+        # training_pair: ((), emocls)
+        emoTag = Variable(torch.LongTensor(test_pair[1]))
+        input_variable, target_variable = variablesFromPair(test_pair[0])
+        prediction = pred(input_variable, encoder, decoder, emoTag)
+        print "ori : ", wm.getWordFromIdx(test_pair[0][1][0])
+        print "pred: ", wm.getWordFromIdx(prediction)
+
+
 def showPlot(points):
     plt.figure()
     fig, ax = plt.subplots()
@@ -220,20 +270,26 @@ def showPlot(points):
 def main(wm, testWm, encoder, decoder, epoch, pathDir):
     trainLoss = []
     testLoss = []
+    with open(pathDir + "/lookupTable", 'w') as file:
+        pickle.dump(wm.lookupTable, file)
     for i in range(epoch):
+        print "epoch: ", i+1
         tmp = trainIters(encoder, decoder, wm.getBatch(), [j for j in testWm.getBatch()])
         trainLoss.extend(tmp[0])
         testLoss.extend(tmp[1])
-        if i % 2 == 0:
+        if i % 1 == 0:
             # save model
-            torch.save(encoder.state_dict(), pathDir + "/Encoder.model")
-            torch.save(decoder.state_dict(), pathDir + "/Decoder.model")
+            torch.save(encoder.state_dict(), pathDir + "/Encoder_" + str(i+1) + ".model")
+            torch.save(decoder.state_dict(), pathDir + "/Decoder_" + str(i+1) + ".model")
+            with open(pathDir + "/loss_" + str(i+1), 'w') as file:
+                pickle.dump((trainLoss, testLoss), file)
     torch.save(encoder.state_dict(), pathDir + "/Encoder.model")
     torch.save(decoder.state_dict(), pathDir + "/Decoder.model")
     with open(pathDir + "/loss", 'w') as file:
         pickle.dump((trainLoss, testLoss), file)
-    with open(pathDir + "/lookupTable", 'w') as file:
-        pickle.dump(wm.lookupTable, file)
+    
+
+
 
 
 if __name__ == "__main__":
@@ -246,10 +302,10 @@ if __name__ == "__main__":
         5: 'thankfulness',
         6: 'surprise'
     }
-    epoch = 1
+    epoch = 5
     emoIdx = {mood_dict[i]:i for i in mood_dict}
-    emoCls = "../../data/Subtitles/subtitileData/tiny_emotion.txt"
-    subtitle = "../../data/Subtitles/subtitileData/tiny.txt"
+    emoCls = "../../data/Subtitles/subtitileData/smaller_emotion.txt"
+    subtitle = "../../data/Subtitles/subtitileData/smaller.txt"
     test = "../../data/Subtitles/subtitileData/test.txt"
     testEmoCls = "../../data/Subtitles/subtitileData/test_emotion.txt"
     dm = DH.DataManager()
@@ -263,4 +319,13 @@ if __name__ == "__main__":
     decoderHidden_dim, decoderOutput_dim = 16, 10000
     encoder = EncoderRNN(encoderInput_dim, encoderHidden_dim)
     decoder = AttnDecoderRNN(decoderHidden_dim, decoderOutput_dim)
+    # encoderCheckPoint = torch.load("/home/lui/CMU/Semester3/10707/proj/implementation/chatbot/Encoder_1.model")
+    # decoderCheckPoint = torch.load("/home/lui/CMU/Semester3/10707/proj/implementation/chatbot/Decoder_1.model")
+    encoder.load_state_dict(encoderCheckPoint)
+    decoder.load_state_dict(decoderCheckPoint)
+    with open("./lookupTable", 'r') as file:
+        lookupTable = pickle.load(file)
+    testWm.lookupTable = lookupTable
+    wm.lookupTable = lookupTable
     main(wm, testWm, encoder, decoder, epoch, pathDir='.')
+    # predIters(testWm, encoder, decoder)
