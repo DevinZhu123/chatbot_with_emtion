@@ -122,7 +122,7 @@ def train(input_variable, target_variable, encoder, decoder, encoder_optimizer, 
             input_variable[ei], encoder_hidden)
         encoder_outputs[ei] = encoder_output[0][0]
 
-    decoder_input = Variable(torch.LongTensor([[SOS_token]]))
+    decoder_input = target_variable[0]
     decoder_input = decoder_input.cuda() if use_cuda else decoder_input
 
     decoder_hidden = encoder_hidden
@@ -131,7 +131,7 @@ def train(input_variable, target_variable, encoder, decoder, encoder_optimizer, 
 
     if use_teacher_forcing:
         # Teacher forcing: Feed the target as the next input
-        for di in range(target_length):
+        for di in range(1, target_length):
             decoder_output, decoder_hidden, decoder_attention = decoder(
                 decoder_input, decoder_hidden, encoder_output, encoder_outputs, emoTag)
             loss += criterion(decoder_output, target_variable[di])
