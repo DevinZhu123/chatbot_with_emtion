@@ -186,8 +186,7 @@ def trainIters(encoder, decoder, training_pairs, test_pairs=None, print_every=10
         if iter % print_every == 0:
             print_loss_avg = print_loss_total / print_every
             print_loss_total = 0
-            print print_loss_avg
-            break
+            print "train loss: ", print_loss_avg
             # print('%s (%d %d%%) %.4f' % (timeSince(start, iter / n_iters), iter, iter / n_iters * 100, print_loss_avg))
 
         if iter % plot_every == 0:
@@ -197,7 +196,7 @@ def trainIters(encoder, decoder, training_pairs, test_pairs=None, print_every=10
 
         if test_pairs and iter % plot_every == 0:
             test_loss = 0.0
-            testIter = 0
+            testIter = 0c
             for test_pair in test_pairs:
                 testIter += 1
                 # training_pair: ((), emocls)
@@ -207,6 +206,7 @@ def trainIters(encoder, decoder, training_pairs, test_pairs=None, print_every=10
                              decoder, encoder_optimizer, decoder_optimizer, criterion, emoTag, isTrain=False)
                 test_loss += loss
             test_losses.append(test_loss / testIter)
+            print "test loss: ", test_loss / testIter
 
     return plot_losses, test_losses
 
@@ -234,10 +234,9 @@ def main(wm, testWm, encoder, decoder, epoch, pathDir):
     torch.save(encoder.state_dict(), pathDir + "/Encoder.model")
     torch.save(decoder.state_dict(), pathDir + "/Decoder.model")
     with open(pathDir + "/loss", 'w') as file:
-        pickle.dump(loss, file)
+        pickle.dump((trainLoss, testLoss), file)
     with open(pathDir + "/lookupTable", 'w') as file:
         pickle.dump(wm.lookupTable, file)
-
 
 
 if __name__ == "__main__":
@@ -254,8 +253,8 @@ if __name__ == "__main__":
     emoIdx = {mood_dict[i]:i for i in mood_dict}
     emoCls = "../../data/Subtitles/subtitileData/tiny_emotion.txt"
     subtitle = "../../data/Subtitles/subtitileData/tiny.txt"
-    test = "../data/Subtitles/subtitileData/test.txt"
-    testEmoCls = "../../data/Subtitles/subtitileData/text_emotion.txt"
+    test = "../../data/Subtitles/subtitileData/test.txt"
+    testEmoCls = "../../data/Subtitles/subtitileData/test_emotion.txt"
     dm = DH.DataManager()
     wm = dm.buildModel(subtitle).buildLookupTabel().data4NN(subtitle, 1)
     wm.setEmotionCls(emoCls)
