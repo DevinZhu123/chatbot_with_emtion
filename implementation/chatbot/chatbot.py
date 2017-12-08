@@ -186,6 +186,7 @@ def trainIters(encoder, decoder, training_pairs, print_every=100, plot_every=100
             print_loss_avg = print_loss_total / print_every
             print_loss_total = 0
             print print_loss_avg
+            break
             # print('%s (%d %d%%) %.4f' % (timeSince(start, iter / n_iters), iter, iter / n_iters * 100, print_loss_avg))
 
         if iter % plot_every == 0:
@@ -193,7 +194,7 @@ def trainIters(encoder, decoder, training_pairs, print_every=100, plot_every=100
             plot_losses.append(plot_loss_avg)
             plot_loss_total = 0
 
-    return plot(plot_losses)
+    return plot_losses
 
 
 def showPlot(points):
@@ -245,4 +246,4 @@ if __name__ == "__main__":
     decoderHidden_dim, decoderOutput_dim = 16, 10000
     encoder = EncoderRNN(encoderInput_dim, encoderHidden_dim)
     decoder = AttnDecoderRNN(decoderHidden_dim, decoderOutput_dim)
-    main(wm, encoder, decoder, epoch)
+    main(wm, encoder, decoder, epoch, pathDir='.')
