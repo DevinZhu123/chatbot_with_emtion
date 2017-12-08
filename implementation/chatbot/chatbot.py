@@ -8,6 +8,7 @@ import DataHub as DH
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
+import pickle
 
 
 ### global setting
@@ -192,7 +193,7 @@ def trainIters(encoder, decoder, training_pairs, print_every=100, plot_every=100
             plot_losses.append(plot_loss_avg)
             plot_loss_total = 0
 
-    showPlot(plot_losses)
+    return plot(plot_losses)
 
 
 def showPlot(points):
@@ -204,9 +205,22 @@ def showPlot(points):
     plt.plot(points)
 
 
-def main(wm, encoder, decoder, epoch):
+def main(wm, encoder, decoder, epoch, pathDir):
+    loss = []
     for i in range(epoch):
-        trainIters(encoder, decoder, wm.getBatch())
+        tmp = trainIters(encoder, decoder, wm.getBatch())
+        loss.extend(tmp)
+        if epoch % 2 == 0:
+            # save model
+            torch.save(encoder.state_dict(), pathDir + "/Encoder.model")
+            torch.save(decoder.state_dict(), pathDir + "/Decoder.model")
+    torch.save(encoder.state_dict(), pathDir + "/Encoder.model")
+    torch.save(decoder.state_dict(), pathDir + "/Decoder.model")
+    with open(pathDir + "/loss", 'w') as file:
+        pickle.dump(loss, file)
+    with open(pathDir + "/lookupTable", 'w') as file:
+        pickle.dump(wm.lookupTable, file)
+
 
 
 if __name__ == "__main__":
