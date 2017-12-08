@@ -19,7 +19,7 @@ class DataManager:
         self.wordIndex = {"SOS": 0,  "EOS": 1}
         counter = 2
         for key in self.wordMap:
-            if (key == "SOS" || key == "EOS"):
+            if (key == "SOS" or key == "EOS"):
                 continue
             self.wordIndex[key] = counter
             counter += 1

@@ -13,7 +13,7 @@ import numpy as np
 ### global setting
 teacher_forcing_ratio = 0.5
 use_cuda = 0
-MAX_LENGTH = 30
+MAX_LENGTH = 128
 EOS_token = 1
 
 
@@ -49,7 +49,7 @@ class AttnDecoderRNN(nn.Module):
         self.dropout_p = dropout_p
         self.max_length = max_length
 
-        self.embedding = nn.Embedding(self.output_size, self.hidden_dim)
+        self.embedding = nn.Embedding(self.output_dim, self.hidden_dim)
         self.emotion_embedding = nn.Embedding(7, self.hidden_dim)
         self.attn = nn.Linear(self.hidden_dim * 2, self.max_length)
         self.attn_combine = nn.Linear(self.hidden_dim * 3, self.hidden_dim)
@@ -112,7 +112,7 @@ def train(input_variable, target_variable, encoder, decoder, encoder_optimizer, 
     input_length = input_variable.size()[0]
     target_length = target_variable.size()[0]
 
-    encoder_outputs = Variable(torch.zeros(max_length, encoder.hidden_size))
+    encoder_outputs = Variable(torch.zeros(max_length, encoder.hidden_dim))
     encoder_outputs = encoder_outputs.cuda() if use_cuda else encoder_outputs
 
     loss = 0
@@ -160,8 +160,7 @@ def train(input_variable, target_variable, encoder, decoder, encoder_optimizer, 
     return loss.data[0] / target_length
 
 
-
-def trainIters(encoder, decoder, training_pairs, print_every=1000, plot_every=100, learning_rate=0.01):
+def trainIters(encoder, decoder, training_pairs, print_every=100, plot_every=100, learning_rate=0.01):
     # start = time.time()
     plot_losses = []
     print_loss_total = 0  # Reset every print_every
@@ -171,18 +170,21 @@ def trainIters(encoder, decoder, training_pairs, print_every=1000, plot_every=10
     decoder_optimizer = optim.SGD(decoder.parameters(), lr=learning_rate)
     criterion = nn.NLLLoss()
 
+    iter = 0
     for training_pair in training_pairs:
-        # training_pairs: ((), emocls)
-        emoTag = training_pair[1]
+        # training_pair: ((), emocls)
+        emoTag = Variable(torch.LongTensor(training_pair[1]))
         input_variable, target_variable = variablesFromPair(training_pair[0])
         loss = train(input_variable, target_variable, encoder,
                      decoder, encoder_optimizer, decoder_optimizer, criterion, emoTag)
         print_loss_total += loss
         plot_loss_total += loss
+        iter += 1
 
         if iter % print_every == 0:
             print_loss_avg = print_loss_total / print_every
             print_loss_total = 0
+            print print_loss_avg
             # print('%s (%d %d%%) %.4f' % (timeSince(start, iter / n_iters), iter, iter / n_iters * 100, print_loss_avg))
 
         if iter % plot_every == 0:
