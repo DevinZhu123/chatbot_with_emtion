@@ -161,9 +161,9 @@ def train(input_variable, target_variable, encoder, decoder, encoder_optimizer, 
     return loss.data[0] / target_length
 
 
-def trainIters(encoder, decoder, training_pairs, test_pairs=None, print_every=100, plot_every=100, learning_rate=0.01):
+def trainIters(encoder, decoder, training_pairs, test_pairs=None, print_every=100, test_every=2000, learning_rate=0.01):
     # start = time.time()
-    plot_losses = []
+    train_losses = []
     test_losses = []
     print_loss_total = 0  # Reset every print_every
     plot_loss_total = 0  # Reset every plot_every
@@ -187,16 +187,13 @@ def trainIters(encoder, decoder, training_pairs, test_pairs=None, print_every=10
             print_loss_avg = print_loss_total / print_every
             print_loss_total = 0
             print "train loss: ", print_loss_avg
+            train_losses.append(print_loss_avg)
             # print('%s (%d %d%%) %.4f' % (timeSince(start, iter / n_iters), iter, iter / n_iters * 100, print_loss_avg))
 
-        if iter % plot_every == 0:
-            plot_loss_avg = plot_loss_total / plot_every
-            plot_losses.append(plot_loss_avg)
-            plot_loss_total = 0
 
-        if test_pairs and iter % plot_every == 0:
+        if test_pairs and iter % test_every == 0:
             test_loss = 0.0
-            testIter = 0c
+            testIter = 0
             for test_pair in test_pairs:
                 testIter += 1
                 # training_pair: ((), emocls)
@@ -208,7 +205,7 @@ def trainIters(encoder, decoder, training_pairs, test_pairs=None, print_every=10
             test_losses.append(test_loss / testIter)
             print "test loss: ", test_loss / testIter
 
-    return plot_losses, test_losses
+    return train_losses, test_losses
 
 
 def showPlot(points):
