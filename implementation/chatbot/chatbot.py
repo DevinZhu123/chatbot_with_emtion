@@ -3,7 +3,7 @@ import torch.nn as nn
 from torch.autograd import Variable
 from torch import optim
 import torch.nn.functional as F
-
+import random
 import DataHub as DH
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -14,7 +14,7 @@ import numpy as np
 teacher_forcing_ratio = 0.5
 use_cuda = 0
 MAX_LENGTH = 30
-
+EOS_token = 1
 
 
 class EncoderRNN(nn.Module):
@@ -162,7 +162,7 @@ def train(input_variable, target_variable, encoder, decoder, encoder_optimizer, 
 
 
 def trainIters(encoder, decoder, training_pairs, print_every=1000, plot_every=100, learning_rate=0.01):
-    #start = time.time()
+    # start = time.time()
     plot_losses = []
     print_loss_total = 0  # Reset every print_every
     plot_loss_total = 0  # Reset every plot_every
@@ -183,8 +183,7 @@ def trainIters(encoder, decoder, training_pairs, print_every=1000, plot_every=10
         if iter % print_every == 0:
             print_loss_avg = print_loss_total / print_every
             print_loss_total = 0
-            print('%s (%d %d%%) %.4f' % (timeSince(start, iter / n_iters),
-                                         iter, iter / n_iters * 100, print_loss_avg))
+            # print('%s (%d %d%%) %.4f' % (timeSince(start, iter / n_iters), iter, iter / n_iters * 100, print_loss_avg))
 
         if iter % plot_every == 0:
             plot_loss_avg = plot_loss_total / plot_every
