@@ -161,7 +161,7 @@ def train(input_variable, target_variable, encoder, decoder, encoder_optimizer, 
     return loss.data[0] / target_length
 
 
-def trainIters(encoder, decoder, training_pairs, test_pairs=None, print_every=100, test_every=2000, learning_rate=0.01):
+def trainIters(encoder, decoder, training_pairs, test_pairs=None, print_every=2000, test_every=2000, learning_rate=0.01):
     # start = time.time()
     train_losses = []
     test_losses = []
@@ -224,7 +224,7 @@ def main(wm, testWm, encoder, decoder, epoch, pathDir):
         tmp = trainIters(encoder, decoder, wm.getBatch(), [i for i in testWm.getBatch()])
         trainLoss.extend(tmp[0])
         testLoss.extend(tmp[1])
-        if epoch % 2 == 0:
+        if i % 2 == 0:
             # save model
             torch.save(encoder.state_dict(), pathDir + "/Encoder.model")
             torch.save(decoder.state_dict(), pathDir + "/Decoder.model")
