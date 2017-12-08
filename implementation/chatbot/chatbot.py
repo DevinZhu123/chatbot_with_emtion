@@ -224,7 +224,7 @@ def main(wm, testWm, encoder, decoder, epoch, pathDir):
     trainLoss = []
     testLoss = []
     for i in range(epoch):
-        tmp = trainIters(encoder, decoder, wm.getBatch(), testWm.getBatch())
+        tmp = trainIters(encoder, decoder, wm.getBatch(), [i for i in testWm.getBatch()])
         trainLoss.extend(tmp[0])
         testLoss.extend(tmp[1])
         if epoch % 2 == 0:
