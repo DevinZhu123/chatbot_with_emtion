@@ -1,4 +1,4 @@
-from __future__ import unicode_literals, division ## doesn't import the pritn function
+# from __future__ import unicode_literals, division ## doesn't import the pritn function
 from collections import defaultdict as ddict
 from io import open
 import unicodedata
@@ -70,30 +70,6 @@ class DataManager:
         tmpDict["UNK"] = 0
         return tmpDict
 
-    def _getNgram(self, Textaddr):
-        tmpDict = ddict(int)
-        with open(Textaddr, 'r') as file:
-            for line in file:
-                line = line.strip()
-                line = ("START " + line.lower() + ' END').split(" ")
-                if len(line) < self.Ngram:
-                    continue
-                for i in range(len(line)):
-                    if line[i] not in self.wordMap:
-                        line[i] = "UNK"
-                for i in range(len(line)-self.Ngram+1):
-                    tmpDict[" ".join(line[i:i+self.Ngram])] += 1
-        return tmpDict
-
-    @staticmethod
-    def topNGram(Ngrams, topN):
-        if topN > len(Ngrams):
-            print "error: top-N should be less than or equal to the size of Ngram model"
-            return None
-        else:
-            rst = [(Ngrams[key], key) for key in Ngrams]
-            return heapq.nlargest(topN, rst)
-
 
 class WordVecManager:
     def __init__(self, data, lookupTable, batch):
@@ -105,12 +81,12 @@ class WordVecManager:
 
     def getBatch(self, shuffled=True):
         # batch
-        #print self.batch, "get batch"
+        # print self.batch, "get batch"
         if shuffled:
             random.shuffle(self.rawdata)
         batches = it.izip(xrange(0, len(self.rawdata)+1, self.batch), xrange(self.batch, len(self.rawdata)+1, self.batch))
         for start, end in batches:
-            #print start, end
+            # print start, end
             yield self._Helper(start, end)
 
     def getWordFromIdx(self, idxs):
@@ -127,10 +103,11 @@ class WordVecManager:
         for pair in tmp:
             a = pair[0]
             b = pair[1]
-            #print a==None, b==None, start, end, len(self.rawdata)
+            # print a==None, b==None, start, end, len(self.rawdata)
             idx1.append([self.lookupTable[w] for w in a])
             idx2.append([self.lookupTable[w] for w in b])
         return (idx1, idx2)
+
 
 if __name__ == "__main__":
     test = "/media/lyma/entertain/cmu/Semester3/10707DL/subtitileData/tiny.txt"
