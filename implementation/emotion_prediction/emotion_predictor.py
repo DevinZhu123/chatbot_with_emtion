@@ -43,3 +43,11 @@ if __name__ == "__main__":
     print ep.predict('I so frustrated .')
     print ep.predict('I feeling pretty good right now .')
     print ep.predict('It feels so good taking a long vacation .')
+    emotions = []
+    with open('../../data/Subtitles/subtitileData/test.txt', 'r') as file:
+        for line in file:
+            line = " ".join(line.split(" "))[1: -1]
+            emotions.append(ep.predict(line))
+    with open('../../data/Subtitles/subtitileData/test_emotion.txt', 'w') as file:
+        for emotion in emotions:
+            file.write(emotion+'\n')
