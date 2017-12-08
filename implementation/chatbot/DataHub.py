@@ -28,6 +28,7 @@ class DataManager:
             counter += 1
         # build wordvec
         print "build initial lookup table"
+        return self
 
     def data4NN(self, Textaddr, batch):
         # batch: is the size of batch
