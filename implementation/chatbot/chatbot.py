@@ -220,14 +220,14 @@ if __name__ == "__main__":
     }
     epoch = 1
     emoIdx = {mood_dict[i]:i for i in mood_dict}
-    emoCls = "emotion_class.txt"
-    subtitle = "tiny.txt"
+    emoCls = "../../data/Subtitles/subtitileData/tiny_emotion.txt"
+    subtitle = "../../data/Subtitles/subtitileData/tiny.txt"
     dm = DH.DataManager()
-    wm = demo.buildModel(test).buildLookupTabel().data4NN(test, 1)
-    wm.setEmotionCls(EMOCLS)
+    wm = dm.buildModel(subtitle).buildLookupTabel().data4NN(subtitle, 1)
+    wm.setEmotionCls(emoCls)
     wm.setEmoIdx(emoIdx)
-    encoderInput_dim, encoderHidden_dim = None, None
-    decoderHidden_dim, decoderOutput_dim = None, None
+    encoderInput_dim, encoderHidden_dim = 10000, 16
+    decoderHidden_dim, decoderOutput_dim = 16, 10000
     encoder = EncoderRNN(encoderInput_dim, encoderHidden_dim)
     decoder = AttnDecoderRNN(decoderHidden_dim, decoderOutput_dim)
     main(wm, encoder, decoder, epoch)
