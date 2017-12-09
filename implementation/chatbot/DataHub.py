@@ -124,13 +124,23 @@ class WordEmoManager:
                 yield (self._Helper(start, end), [self.emoIdx[i] for i in self.emoCls[start:end]])
             else:
                 yield self._Helper(start, end)
-
+    """
     def getWordFromIdx(self, idxs):
         # idxs: [batch, ]
         if self.inverseIdx is None:
             self.inverseIdx = {self.lookupTable[key]:key for key in self.lookupTable}
         rst = [self.inverseIdx[idxs[i]] for i in range(idxs.shape[0])]
         return " ".join(rst)
+    """
+
+
+    def getWordFromIdx(self, idxs):
+        # idxs: [batch, ]
+        if self.inverseIdx is None:
+            self.inverseIdx = {self.lookupTable[key]: key for key in self.lookupTable}
+        rst = [self.inverseIdx[i] for i in idxs]
+        return " ".join(rst)
+
 
     def _Helper(self, start, end):
         tmp = self.rawdata[start:end]

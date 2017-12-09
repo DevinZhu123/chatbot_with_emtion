@@ -5,7 +5,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import utils
-import csv
+import matplotlib.pyplot as plt
+import pickle
 
 
 class EmotionLSTM(nn.Module):
@@ -46,9 +47,9 @@ def loadData(path_to_tweet, path_to_tag, path_to_word_vec):
 
 
 def testDemoTweets():
-    path_to_tweet = '/Users/devin/src/RL_chatbot/data/TweetsData/train_1/cleanTrain_1TweetsWithTags.txt'
-    path_to_tag = '/Users/devin/src/RL_chatbot/data/TweetsData/train_1/tweets_with_tags_train_1_IdMoods.txt'
-    path_to_word_vec = '/Users/devin/src/RL_chatbot/data/TweetsData/glove.6B.50d.txt'
+    path_to_tweet = '../../data/TweetsData/train_1/cleanTrain_1TweetsWithTags.txt'
+    path_to_tag = '../../data/TweetsData/train_1/tweets_with_tags_train_1_IdMoods.txt'
+    path_to_word_vec = '../../data/TweetsData/glove.6B.50d.txt'
     dataX, dataY, validX, validY = loadData(path_to_tweet, path_to_tag, path_to_word_vec)
 
     model = EmotionLSTM(input_dim=50, hidden_dim=200, target_dim=7)
@@ -78,7 +79,7 @@ def testDemoTweets():
             loss.backward()
             optimizer.step()
 
-            if iters % 10000 == 0:
+            if iters % 1000 == 0:
                 num_tests = len(validX)
                 count = 0
                 for j in range(num_tests):
@@ -91,12 +92,22 @@ def testDemoTweets():
                     if pred_tag == validY[j]:
                         count += 1
                 print 'test accuracy: '+str(count*1.0/num_tests)
-                accuracy_list.append(count*1.0/num_tests)
+                accuracy_list.append(1 - count*1.0/num_tests)
     torch.save(model.state_dict(), './trained_model1')
-    with open('./accuracy.csv', 'wb') as myfile:
-        wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
-        wr.writerow(accuracy_list)
+    with open('./accuracy.csv', 'wb') as file:
+        pickle.dump(accuracy_list, file)
+
+
+def plot():
+    with open('./accuracy.csv', 'rb') as file:
+        acc = pickle.load(file)
+    num_dp = len(acc)
+    x = [i*1000 for i in range(1, num_dp+1)]
+    plt.plot(x, acc)
+    plt.xlabel('number of samples')
+    plt.ylabel('classification error')
+    plt.show()
 
 
 if __name__ == "__main__":
-    testDemoTweets()
+    plot()
